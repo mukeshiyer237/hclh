@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # SonarCloud needs full git history for blame & new-code detection
+          fetch-depth: 0
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -29,11 +29,10 @@ jobs:
           mvn clean verify sonar:sonar -B \
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/target/site/jacoco/jacoco.xml
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SPRING_PROFILES_ACTIVE: test
           DB_URL: jdbc:h2:mem:ci
           DB_USERNAME: sa
           DB_PASSWORD: ""
@@ -42,4 +41,3 @@ jobs:
           KAFKA_SECURITY_PROTOCOL: PLAINTEXT
           KAFKA_SASL_MECHANISM: ""
           KAFKA_SASL_JAAS_CONFIG: ""
-          SPRING_PROFILES_ACTIVE: test

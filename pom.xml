@@ -29,27 +29,13 @@
 	<properties>
 		<java.version>17</java.version>
 		<jjwt.version>0.12.6</jjwt.version>
-		<!-- SonarCloud -->
-		<sonar.organization>${env.SONAR_ORGANIZATION}</sonar.organization>
-		<sonar.projectKey>${env.SONAR_PROJECT_KEY}</sonar.projectKey>
+		<!-- SonarCloud — org/key/token passed via -D flags in CI workflow -->
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
-		<sonar.token>${env.SONAR_TOKEN}</sonar.token>
-		<!-- JaCoCo output path consumed by Sonar -->
-		<sonar.coverage.jacoco.xmlReportPaths>
-			${project.build.directory}/site/jacoco/jacoco.xml
-		</sonar.coverage.jacoco.xmlReportPaths>
+		<!-- JaCoCo XML report path — must be on one line, no whitespace -->
+		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 		<!-- Exclude generated / config / boilerplate from coverage -->
-		<sonar.exclusions>
-			**/DiagnosticMain.java,
-			**/config/**,
-			**/domain/entity/**,
-			**/exception/ResourceNotFoundException.java,
-			**/controller/dto/**,
-			**/*Application.java
-		</sonar.exclusions>
-		<sonar.cpd.exclusions>
-			**/dto/**
-		</sonar.cpd.exclusions>
+		<sonar.exclusions>**/DiagnosticMain.java,**/config/**,**/domain/entity/**,**/exception/ResourceNotFoundException.java,**/controller/dto/**,**/*Application.java</sonar.exclusions>
+		<sonar.cpd.exclusions>**/dto/**</sonar.cpd.exclusions>
 	</properties>
 	<dependencies>
 		<dependency>
