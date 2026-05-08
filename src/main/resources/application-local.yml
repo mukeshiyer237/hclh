@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/demo_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    show-sql: true
+  kafka:
+    admin:
+      fail-fast: false
+
+logging:
+  level:
+    com.example.demo: DEBUG
+    org.springframework.security: DEBUG
+    org.apache.kafka: WARN
+    org.apache.kafka.clients.NetworkClient: ERROR
