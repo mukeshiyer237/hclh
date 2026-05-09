@@ -100,6 +100,64 @@ public class GlobalExceptionHandler {
                                                 .build());
         }
 
+        @ExceptionHandler(DuplicateEvaluationException.class)
+        public ResponseEntity<ApiError> handleDuplicateEvaluation(DuplicateEvaluationException ex,
+                        HttpServletRequest request) {
+                log.warn("Duplicate evaluation attempt: {}", ex.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                                ApiError.builder()
+                                                .status(HttpStatus.CONFLICT.value())
+                                                .error("Conflict")
+                                                .message(ex.getMessage())
+                                                .path(request.getRequestURI())
+                                                .build());
+        }
+
+        // ── 404 (score) ─────────────────────────────────────────────────────────────
+
+        @ExceptionHandler(ScoreNotFoundException.class)
+        public ResponseEntity<ApiError> handleScoreNotFound(ScoreNotFoundException ex,
+                        HttpServletRequest request) {
+                log.warn("Score not found: {}", ex.getMessage());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                                ApiError.builder()
+                                                .status(HttpStatus.NOT_FOUND.value())
+                                                .error("Not Found")
+                                                .message(ex.getMessage())
+                                                .path(request.getRequestURI())
+                                                .build());
+        }
+
+        // ── 403 (internal key) ──────────────────────────────────────────────────────
+
+        @ExceptionHandler(InvalidInternalKeyException.class)
+        public ResponseEntity<ApiError> handleInvalidInternalKey(InvalidInternalKeyException ex,
+                        HttpServletRequest request) {
+                log.warn("Invalid internal key at {}", request.getRequestURI());
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                                ApiError.builder()
+                                                .status(HttpStatus.FORBIDDEN.value())
+                                                .error("Forbidden")
+                                                .message(ex.getMessage())
+                                                .path(request.getRequestURI())
+                                                .build());
+        }
+
+        // ── 500 (rule engine) ───────────────────────────────────────────────────────
+
+        @ExceptionHandler(RuleEngineException.class)
+        public ResponseEntity<ApiError> handleRuleEngine(RuleEngineException ex,
+                        HttpServletRequest request) {
+                log.error("Rule engine failure at {}: {}", request.getRequestURI(), ex.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                                ApiError.builder()
+                                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                                .error("Rule Engine Error")
+                                                .message(ex.getMessage())
+                                                .path(request.getRequestURI())
+                                                .build());
+        }
+
         // ── 400 (illegal argument) ──────────────────────────────────────────────────
 
         @ExceptionHandler(IllegalArgumentException.class)

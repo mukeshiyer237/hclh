@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -18,27 +17,11 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class KafkaProducerService {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
-
-    /**
-     * Primary constructor — Spring uses this.
-     * Registers JavaTimeModule so LocalDateTime serializes correctly.
-     */
-    @Autowired
-    public KafkaProducerService(KafkaTemplate<String, String> kafkaTemplate) {
-        this(kafkaTemplate, new ObjectMapper().findAndRegisterModules());
-    }
-
-    /**
-     * Test constructor — allows injecting a custom/mock ObjectMapper.
-     */
-    public KafkaProducerService(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
-        this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper  = objectMapper;
-    }
 
     /**
      * Publish a message without a partition key (Kafka round-robins across partitions).

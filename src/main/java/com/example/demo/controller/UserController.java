@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Users", description = "User management — list, create admin, soft-delete, and role assignment")
+@Tag(name = "Users", description = " (Internal) User management — list, create admin, soft-delete, and role assignment")
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor

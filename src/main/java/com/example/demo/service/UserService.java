@@ -76,7 +76,7 @@ public class UserService {
 
         kafkaProducerService.publish(usersTopic, saved.getId().toString(),
                 new UserCreatedEvent(saved.getId(), saved.getUsername(),
-                        saved.getEmail(), saved.getRole(), saved.getCreatedAt()));
+                        saved.getEmail(), saved.getCreatedAt()));
 
         return toResponse(saved);
     }

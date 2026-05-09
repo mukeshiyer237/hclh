@@ -44,9 +44,21 @@ jwt:
 admin:
   bootstrap-secret: ${ADMIN_BOOTSTRAP_SECRET:disabled}
 
+internal:
+  api-key: ${INTERNAL_API_KEY:dev-internal-key-change-in-prod}
+
 kafka:
   topics:
     users: users-topic
+    credit-score-evaluated: credit.score.evaluated
+    credit-score-requested: credit.score.requested
+  consumer:
+    credit-scoring-group: credit-scoring-service-group
+
+credit:
+  rules:
+    cache:
+      refresh-ms: 300000   # 5 minutes
 
 logging:
   config: classpath:logback-spring.xml

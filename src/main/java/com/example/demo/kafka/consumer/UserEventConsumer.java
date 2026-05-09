@@ -7,6 +7,7 @@ import com.example.demo.kafka.event.UserDeletedEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -14,27 +15,22 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 /**
- * Consumes events from users-topic and writes them to user_lifecycle_events.
+ * Consumes events from users-topic and writes audit rows to user_lifecycle_events.
  *
- * Each message is a JSON string. We inspect the "role" field to distinguish
- * UserCreatedEvent from UserDeletedEvent — created events have a role field,
- * deleted events have a deletedAt field.
+ * This consumer is audit-only. Credit scoring is a separate domain — it is
+ * triggered independently via POST /internal/credit-scores (sync) or the
+ * credit.score.requested Kafka topic (async). User identity here is for
+ * internal RBAC only and has no relation to the credit scoring customerId.
  *
- * Failures are logged and swallowed — a bad message must never crash the consumer
- * or stall the partition. In production, a dead-letter topic would handle poison pills.
+ * Bad messages are logged and acknowledged — a poison pill must never stall the partition.
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class UserEventConsumer {
 
     private final UserLifecycleEventRepository repository;
     private final ObjectMapper objectMapper;
-
-    public UserEventConsumer(UserLifecycleEventRepository repository) {
-        this.repository = repository;
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.findAndRegisterModules(); // registers JavaTimeModule for LocalDateTime
-    }
 
     @KafkaListener(
             topics = "${kafka.topics.users}",
@@ -45,7 +41,7 @@ public class UserEventConsumer {
         try {
             JsonNode node = objectMapper.readTree(message);
 
-            if (node.has("role")) {
+            if (node.has("email") && !node.has("deletedAt")) {
                 handleCreated(message, node);
             } else if (node.has("deletedAt")) {
                 handleDeleted(message, node);
@@ -67,7 +63,7 @@ public class UserEventConsumer {
                 .occurredAt(event.createdAt() != null ? event.createdAt() : LocalDateTime.now())
                 .build();
         repository.save(record);
-        log.info("Audit recorded: USER_CREATED for userId={} username={}", event.userId(), event.username());
+        log.info("Audit recorded: USER_CREATED userId={} username={}", event.userId(), event.username());
     }
 
     private void handleDeleted(String raw, JsonNode node) throws JsonProcessingException {
@@ -80,6 +76,6 @@ public class UserEventConsumer {
                 .occurredAt(event.deletedAt() != null ? event.deletedAt() : LocalDateTime.now())
                 .build();
         repository.save(record);
-        log.info("Audit recorded: USER_DELETED for userId={} username={}", event.userId(), event.username());
+        log.info("Audit recorded: USER_DELETED userId={} username={}", event.userId(), event.username());
     }
 }

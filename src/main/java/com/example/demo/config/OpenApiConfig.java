@@ -1,5 +1,8 @@
 package com.example.demo.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
@@ -27,6 +30,18 @@ public class OpenApiConfig {
 
     @Value("${server.port:8080}")
     private String serverPort;
+
+    /**
+     * Shared ObjectMapper with JavaTimeModule registered.
+     * Used by KafkaProducerService, ScoreRequestedConsumer, and any other bean
+     * that needs JSON serialization — avoids multiple isolated instances.
+     */
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
 
     @Bean
     public OpenAPI openAPI() {
