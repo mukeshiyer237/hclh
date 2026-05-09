@@ -3,7 +3,9 @@ package com.example.demo.service;
 import com.example.demo.controller.dto.AuthResponse;
 import com.example.demo.controller.dto.LoginRequest;
 import com.example.demo.controller.dto.RegisterRequest;
+import com.example.demo.controller.dto.UserResponse;
 import com.example.demo.domain.entity.User;
+import com.example.demo.exception.DuplicateResourceException;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtService;
 import com.example.demo.security.SecurityUser;
@@ -31,9 +33,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock UserRepository       userRepository;
-    @Mock PasswordEncoder      passwordEncoder;
-    @Mock JwtService           jwtService;
+    @Mock UserRepository        userRepository;
+    @Mock PasswordEncoder       passwordEncoder;
+    @Mock JwtService            jwtService;
     @Mock AuthenticationManager authenticationManager;
 
     @InjectMocks AuthService authService;
@@ -55,41 +57,43 @@ class AuthServiceTest {
     // ── register ─────────────────────────────────────────────────────────────
 
     @Test
-    void register_happyPath_returnsTokenAndUsername() {
+    void register_happyPath_returnsUserResponse() {
         when(userRepository.existsByUsername("alice")).thenReturn(false);
         when(userRepository.existsByEmail("alice@example.com")).thenReturn(false);
         when(passwordEncoder.encode("Password1!")).thenReturn("encoded");
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(jwtService.generateToken("alice")).thenReturn("jwt-token");
 
-        AuthResponse response = authService.register(registerRequest);
+        UserResponse response = authService.register(registerRequest);
 
-        assertThat(response.token()).isEqualTo("jwt-token");
         assertThat(response.username()).isEqualTo("alice");
+        assertThat(response.email()).isEqualTo("alice@example.com");
         assertThat(response.role()).isEqualTo("USER");
+        assertThat(response.deletedAt()).isNull();
 
         verify(userRepository).save(any(User.class));
         verify(passwordEncoder).encode("Password1!");
+        // JWT must NOT be issued on register
+        verify(jwtService, never()).generateToken(anyString());
     }
 
     @Test
-    void register_duplicateUsername_throwsIllegalArgument() {
+    void register_duplicateUsername_throwsDuplicateResourceException() {
         when(userRepository.existsByUsername("alice")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(DuplicateResourceException.class)
                 .hasMessageContaining("alice");
 
         verify(userRepository, never()).save(any());
     }
 
     @Test
-    void register_duplicateEmail_throwsIllegalArgument() {
+    void register_duplicateEmail_throwsDuplicateResourceException() {
         when(userRepository.existsByUsername("alice")).thenReturn(false);
         when(userRepository.existsByEmail("alice@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(DuplicateResourceException.class)
                 .hasMessageContaining("alice@example.com");
 
         verify(userRepository, never()).save(any());
@@ -101,7 +105,6 @@ class AuthServiceTest {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(passwordEncoder.encode("Password1!")).thenReturn("$2a$bcrypt");
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(jwtService.generateToken(anyString())).thenReturn("token");
 
         authService.register(registerRequest);
 
@@ -123,7 +126,6 @@ class AuthServiceTest {
 
         assertThat(response.token()).isEqualTo("login-token");
         assertThat(response.username()).isEqualTo("alice");
-        // SecurityUser prefixes role with "ROLE_" per Spring Security convention
         assertThat(response.role()).isEqualTo("ROLE_USER");
     }
 

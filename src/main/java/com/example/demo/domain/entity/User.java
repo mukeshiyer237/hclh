@@ -1,5 +1,7 @@
 package com.example.demo.domain.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,4 +30,7 @@ public class User extends BaseEntity {
     @Column(nullable = false, length = 50)
     @Builder.Default
     private String role = "USER";
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;   // null = active, non-null = soft deleted
 }

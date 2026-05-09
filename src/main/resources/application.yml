@@ -41,5 +41,12 @@ jwt:
   secret: ${JWT_SECRET:fallback-secret-for-test-only-not-used-in-prod}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
+admin:
+  bootstrap-secret: ${ADMIN_BOOTSTRAP_SECRET:disabled}
+
+kafka:
+  topics:
+    users: users-topic
+
 logging:
   config: classpath:logback-spring.xml

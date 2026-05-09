@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,5 +95,47 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     void delete_removesUser() {
         userRepository.delete(alice);
         assertThat(userRepository.findByUsername("alice")).isEmpty();
+    }
+
+    // ── soft-delete query methods ──────────────────────────────────────────────
+
+    @Test
+    void findAllByDeletedAtIsNull_excludesSoftDeletedUsers() {
+        // soft-delete alice
+        alice.setDeletedAt(LocalDateTime.now());
+        userRepository.save(alice);
+
+        List<User> active = userRepository.findAllByDeletedAtIsNull();
+
+        assertThat(active).extracting(User::getUsername).doesNotContain("alice");
+    }
+
+    @Test
+    void findAllByDeletedAtIsNull_includesActiveUsers() {
+        List<User> active = userRepository.findAllByDeletedAtIsNull();
+
+        assertThat(active).extracting(User::getUsername).contains("alice");
+    }
+
+    @Test
+    void findByIdAndDeletedAtIsNull_activeUser_returnsPresent() {
+        Optional<User> found = userRepository.findByIdAndDeletedAtIsNull(alice.getId());
+        assertThat(found).isPresent();
+        assertThat(found.get().getUsername()).isEqualTo("alice");
+    }
+
+    @Test
+    void findByIdAndDeletedAtIsNull_softDeletedUser_returnsEmpty() {
+        alice.setDeletedAt(LocalDateTime.now());
+        userRepository.save(alice);
+
+        Optional<User> found = userRepository.findByIdAndDeletedAtIsNull(alice.getId());
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void findByIdAndDeletedAtIsNull_unknownId_returnsEmpty() {
+        Optional<User> found = userRepository.findByIdAndDeletedAtIsNull(999L);
+        assertThat(found).isEmpty();
     }
 }

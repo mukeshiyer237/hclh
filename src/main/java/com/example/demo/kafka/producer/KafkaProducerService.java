@@ -25,11 +25,11 @@ public class KafkaProducerService {
 
     /**
      * Primary constructor — Spring uses this.
-     * Uses a fresh Jackson 2 ObjectMapper (always available via jjwt-jackson).
+     * Registers JavaTimeModule so LocalDateTime serializes correctly.
      */
     @Autowired
     public KafkaProducerService(KafkaTemplate<String, String> kafkaTemplate) {
-        this(kafkaTemplate, new ObjectMapper());
+        this(kafkaTemplate, new ObjectMapper().findAndRegisterModules());
     }
 
     /**

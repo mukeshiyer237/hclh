@@ -3,8 +3,9 @@ package com.example.demo.service;
 import com.example.demo.controller.dto.AuthResponse;
 import com.example.demo.controller.dto.LoginRequest;
 import com.example.demo.controller.dto.RegisterRequest;
+import com.example.demo.controller.dto.UserResponse;
 import com.example.demo.domain.entity.User;
-import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.exception.DuplicateResourceException;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtService;
 import com.example.demo.security.SecurityUser;
@@ -26,12 +27,12 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public UserResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.username())) {
-            throw new IllegalArgumentException("Username already taken: " + request.username());
+            throw new DuplicateResourceException("username", request.username());
         }
         if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Email already registered: " + request.email());
+            throw new DuplicateResourceException("email", request.email());
         }
 
         User user = User.builder()
@@ -41,10 +42,15 @@ public class AuthService {
                 .role("USER")
                 .build();
 
-        userRepository.save(user);
+        User saved = userRepository.save(user);
 
-        String token = jwtService.generateToken(user.getUsername());
-        return new AuthResponse(token, user.getUsername(), user.getRole());
+        return new UserResponse(
+                saved.getId(),
+                saved.getUsername(),
+                saved.getEmail(),
+                saved.getRole(),
+                saved.getCreatedAt(),
+                saved.getDeletedAt());
     }
 
     @Transactional(readOnly = true)

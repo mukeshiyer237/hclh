@@ -41,6 +41,7 @@ public class SecurityConfig {
     /** Routes that require no authentication. */
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",       // login, register
+            "/api/v1/users/admin",   // bootstrap god-user — protected by bootstrap secret
             "/v3/api-docs/**",       // OpenAPI spec
             "/swagger-ui/**",        // Swagger UI assets
             "/swagger-ui.html",

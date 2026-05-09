@@ -1,0 +1,85 @@
+package com.example.demo.kafka.consumer;
+
+import com.example.demo.audit.UserLifecycleEvent;
+import com.example.demo.audit.UserLifecycleEventRepository;
+import com.example.demo.kafka.event.UserCreatedEvent;
+import com.example.demo.kafka.event.UserDeletedEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+
+/**
+ * Consumes events from users-topic and writes them to user_lifecycle_events.
+ *
+ * Each message is a JSON string. We inspect the "role" field to distinguish
+ * UserCreatedEvent from UserDeletedEvent — created events have a role field,
+ * deleted events have a deletedAt field.
+ *
+ * Failures are logged and swallowed — a bad message must never crash the consumer
+ * or stall the partition. In production, a dead-letter topic would handle poison pills.
+ */
+@Slf4j
+@Component
+public class UserEventConsumer {
+
+    private final UserLifecycleEventRepository repository;
+    private final ObjectMapper objectMapper;
+
+    public UserEventConsumer(UserLifecycleEventRepository repository) {
+        this.repository = repository;
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.findAndRegisterModules(); // registers JavaTimeModule for LocalDateTime
+    }
+
+    @KafkaListener(
+            topics = "${kafka.topics.users}",
+            groupId = "${spring.kafka.consumer.group-id}"
+    )
+    public void consume(String message) {
+        log.debug("Received message from users-topic: {}", message);
+        try {
+            JsonNode node = objectMapper.readTree(message);
+
+            if (node.has("role")) {
+                handleCreated(message, node);
+            } else if (node.has("deletedAt")) {
+                handleDeleted(message, node);
+            } else {
+                log.warn("Unrecognised event shape on users-topic, skipping: {}", message);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to process users-topic message, skipping: {}", ex.getMessage(), ex);
+        }
+    }
+
+    private void handleCreated(String raw, JsonNode node) throws JsonProcessingException {
+        UserCreatedEvent event = objectMapper.treeToValue(node, UserCreatedEvent.class);
+        UserLifecycleEvent record = UserLifecycleEvent.builder()
+                .userId(event.userId())
+                .username(event.username())
+                .eventType("USER_CREATED")
+                .payload(raw)
+                .occurredAt(event.createdAt() != null ? event.createdAt() : LocalDateTime.now())
+                .build();
+        repository.save(record);
+        log.info("Audit recorded: USER_CREATED for userId={} username={}", event.userId(), event.username());
+    }
+
+    private void handleDeleted(String raw, JsonNode node) throws JsonProcessingException {
+        UserDeletedEvent event = objectMapper.treeToValue(node, UserDeletedEvent.class);
+        UserLifecycleEvent record = UserLifecycleEvent.builder()
+                .userId(event.userId())
+                .username(event.username())
+                .eventType("USER_DELETED")
+                .payload(raw)
+                .occurredAt(event.deletedAt() != null ? event.deletedAt() : LocalDateTime.now())
+                .build();
+        repository.save(record);
+        log.info("Audit recorded: USER_DELETED for userId={} username={}", event.userId(), event.username());
+    }
+}

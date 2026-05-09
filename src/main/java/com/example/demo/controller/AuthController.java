@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.controller.dto.AuthResponse;
 import com.example.demo.controller.dto.LoginRequest;
 import com.example.demo.controller.dto.RegisterRequest;
+import com.example.demo.controller.dto.UserResponse;
 import com.example.demo.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
